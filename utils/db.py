@@ -78,8 +78,12 @@ def save_token(email, token, expires_at):
         "token": token,
         "expires_at": expires_at.isoformat()
     }
-    # upsert based on email
-    supabase.table("auth_tokens").upsert(data, on_conflict="email").execute()
+    try:
+        # upsert based on email
+        supabase.table("auth_tokens").upsert(data, on_conflict="email").execute()
+    except Exception as e:
+        st.error(f"Database error in save_token: {e}")
+        raise
 
 def verify_token(token):
     supabase = get_supabase()
