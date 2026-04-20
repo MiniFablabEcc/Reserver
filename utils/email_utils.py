@@ -29,7 +29,7 @@ def send_email(to_email, subject, body):
         server.quit()
         return True
     except Exception as e:
-        print(f"Error sending email: {e}")
+        st.error(f"Error sending email: {e}")
         return False
 
 def send_login_link(to_email, link):
