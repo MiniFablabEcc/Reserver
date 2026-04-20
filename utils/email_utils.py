@@ -9,7 +9,7 @@ def send_email(to_email, subject, body):
         st.error("Email secrets not configured. Please add SMTP details to .streamlit/secrets.toml")
         return False
         
-    smtp_server = "smtp.office365.com"
+    smtp_server = "smtp.gmail.com"
     smtp_port = 587
     smtp_user = st.secrets["email"]["user"] # minifablabecc@outlook.com
     smtp_password = st.secrets["email"]["password"]
