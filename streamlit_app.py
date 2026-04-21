@@ -1,5 +1,6 @@
 import streamlit as st
 from utils.auth import check_auth_token, is_authenticated
+from utils.admin import is_admin
 from utils.session import load_session_from_cookie, clear_session_cookie
 
 st.set_page_config(
@@ -30,6 +31,9 @@ pages = []
 pages.append(st.Page("app_pages/login.py", title="Connexion / Identité", icon=":material/login:"))
 pages.append(st.Page("app_pages/reservation.py", title="Faire une Réservation", icon=":material/event:"))
 pages.append(st.Page("app_pages/dashboard.py", title="Planning Actuel", icon=":material/dashboard:"))
+
+if is_authenticated() and is_admin(st.session_state.user_email):
+    pages.append(st.Page("app_pages/admin.py", title="Panneau d'Admin", icon=":material/admin_panel_settings:"))
 
 pg = st.navigation(pages)
 

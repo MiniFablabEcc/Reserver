@@ -4,18 +4,9 @@ from utils.session import save_session_cookie
 
 st.header("🔑 Connexion / Identité")
 
-if is_authenticated():
-    group_label = f"{st.session_state.group_type} {st.session_state.group_index}"
-    st.success(f"Vous êtes déjà connecté en tant que {group_label}.")
-    st.info("Vous pouvez aller à la page de réservation pour effectuer une réservation.")
-    if st.button("Aller à la Réservation"):
-        st.switch_page("app_pages/reservation.py")
-elif st.session_state.get("is_bachelor", False):
-    group_label = f"Bachelor {st.session_state.group_index}"
-    st.success(f"Identité définie sur {group_label}.")
-    st.info("Vous pouvez aller à la page de réservation pour effectuer une réservation.")
-    if st.button("Aller à la Réservation"):
-        st.switch_page("app_pages/reservation.py")
+if is_authenticated() or st.session_state.get("is_bachelor", False):
+    # Auto-redirect to reservation page if already logged in or identity set
+    st.switch_page("app_pages/reservation.py")
 else:
     tab1, tab2 = st.tabs(["Groupes PLBD", "Groupes Bachelor"])
     
