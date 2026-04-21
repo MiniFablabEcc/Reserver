@@ -23,6 +23,29 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
     count = res.count
     if count >= 2:
         return False, "This slot is already fully booked (max 2 groups)."
+        
+    # Check if this group already booked this exact slot (no double booking a slot)
+    res_slot_group = supabase.table("reservations").select("*", count="exact").match({
+        "date": reservation_date,
+        "slot_start": slot_start,
+        "slot_end": slot_end,
+        "group_type": group_type,
+        "group_index": group_index
+    }).execute()
+    
+    if res_slot_group.count >= 1:
+        return False, "Your group already has a reservation for this slot. You cannot reserve both spots."
+        
+    # On weekdays, a group can only reserve 1 slot per day
+    if not is_weekend:
+        res_day_group = supabase.table("reservations").select("*", count="exact").match({
+            "date": reservation_date,
+            "group_type": group_type,
+            "group_index": group_index
+        }).execute()
+        
+        if res_day_group.count >= 1:
+            return False, "On weekdays, your group can only reserve 1 slot per day."
     
     # Check if the group has reached its limit for the week
     date_obj = datetime.strptime(reservation_date, "%Y-%m-%d")
