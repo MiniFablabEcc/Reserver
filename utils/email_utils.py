@@ -33,29 +33,29 @@ def send_email(to_email, subject, body):
         return False
 
 def send_login_link(to_email, link):
-    subject = "MiniFabLab Login Link"
+    subject = "Lien de connexion MiniFabLab"
     body = f"""
     <html>
         <body>
-            <h3>MiniFabLab Reservation System</h3>
-            <p>Click the link below to login to the reservation system:</p>
+            <h3>Système de Réservation MiniFabLab</h3>
+            <p>Cliquez sur le lien ci-dessous pour vous connecter au système de réservation :</p>
             <p><a href="{link}">{link}</a></p>
-            <p>This link will expire in 1 hour.</p>
+            <p>Ce lien expirera dans 1 heure.</p>
         </body>
     </html>
     """
     return send_email(to_email, subject, body)
 
 def send_reservation_confirmation(to_email, group_name, date, slot):
-    subject = f"Reservation Confirmation - {group_name}"
+    subject = f"Confirmation de réservation - {group_name}"
     body = f"""
     <html>
         <body>
-            <h3>Reservation Confirmed</h3>
-            <p>Your reservation for <b>{group_name}</b> has been successfully made.</p>
-            <p><b>Date:</b> {date}</p>
-            <p><b>Slot:</b> {slot}</p>
-            <p>Thank you!</p>
+            <h3>Réservation Confirmée</h3>
+            <p>Votre réservation pour <b>{group_name}</b> a été effectuée avec succès.</p>
+            <p><b>Date :</b> {date}</p>
+            <p><b>Créneau :</b> {slot}</p>
+            <p>Merci !</p>
         </body>
     </html>
     """

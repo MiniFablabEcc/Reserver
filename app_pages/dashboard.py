@@ -3,7 +3,7 @@ import pandas as pd
 from utils.db import get_reservations
 from datetime import date, timedelta
 
-st.header("📊 Current Schedule")
+st.header("📊 Planning Actuel")
 
 # Week selector
 today = date.today()
@@ -11,14 +11,14 @@ monday = today - timedelta(days=today.weekday())
 sunday = monday + timedelta(days=6)
 
 week_options = {
-    "This Week": monday,
-    "Next Week": monday + timedelta(days=7),
+    "Cette semaine": monday,
+    "Semaine prochaine": monday + timedelta(days=7),
 }
-selected_week = st.selectbox("Select Week", list(week_options.keys()))
+selected_week = st.selectbox("Sélectionner la Semaine", list(week_options.keys()))
 week_start = week_options[selected_week]
 week_end = week_start + timedelta(days=6)
 
-st.write(f"Showing reservations: **{week_start.strftime('%a %d %b')}** to **{week_end.strftime('%a %d %b %Y')}**")
+st.write(f"Affichage des réservations : **{week_start.strftime('%a %d %b')}** au **{week_end.strftime('%a %d %b %Y')}**")
 
 df = get_reservations(week_start.strftime("%Y-%m-%d"), week_end.strftime("%Y-%m-%d"))
 
@@ -65,17 +65,17 @@ for day in days:
         group_2 = groups[1] if len(groups) >= 2 else "—"
         
         if occupancy >= 2:
-            status = "🔴 Full"
+            status = "🔴 Complet"
         elif occupancy == 1:
             status = "🟡 1/2"
         else:
-            status = "🟢 Open"
+            status = "🟢 Libre"
         
         table_data.append({
-            "Slot": slot_label,
-            "Group 1": group_1,
-            "Group 2": group_2,
-            "Status": status
+            "Créneau": slot_label,
+            "Groupe 1": group_1,
+            "Groupe 2": group_2,
+            "Statut": status
         })
     
     table_df = pd.DataFrame(table_data)

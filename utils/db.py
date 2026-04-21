@@ -22,7 +22,7 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
     
     count = res.count
     if count >= 2:
-        return False, "This slot is already fully booked (max 2 groups)."
+        return False, "Ce créneau est déjà complet (max 2 groupes)."
         
     # Check if this group already booked this exact slot (no double booking a slot)
     res_slot_group = supabase.table("reservations").select("*", count="exact").match({
@@ -34,7 +34,7 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
     }).execute()
     
     if res_slot_group.count >= 1:
-        return False, "Your group already has a reservation for this slot. You cannot reserve both spots."
+        return False, "Votre groupe a déjà une réservation pour ce créneau. Vous ne pouvez pas réserver les deux places."
         
     # On weekdays, a group can only reserve 1 slot per day
     if not is_weekend:
@@ -45,7 +45,7 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
         }).execute()
         
         if res_day_group.count >= 1:
-            return False, "On weekdays, your group can only reserve 1 slot per day."
+            return False, "En semaine, votre groupe ne peut réserver qu'un seul créneau par jour."
     
     # Check if the group has reached its limit for the week
     date_obj = datetime.strptime(reservation_date, "%Y-%m-%d")
@@ -68,9 +68,9 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
         limit = 6 if is_weekend else 5
         
     if group_count >= limit:
-        period = "weekend" if is_weekend else "weekdays"
+        period = "le week-end" if is_weekend else "la semaine"
         group_label = f"{group_type} {group_index}"
-        return False, f"Group {group_label} has reached the limit of {limit} reservations for {period} this week."
+        return False, f"Le groupe {group_label} a atteint la limite de {limit} réservations pour {period} cette semaine."
     
     # Create reservation
     data = {
@@ -84,9 +84,9 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
     try:
         supabase.table("reservations").insert(data).execute()
     except Exception as e:
-        return False, f"Database error: {e}"
+        return False, f"Erreur de base de données : {e}"
     
-    return True, "Reservation successful!"
+    return True, "Réservation réussie !"
 
 def get_reservations(start_date=None, end_date=None):
     supabase = get_supabase()
@@ -152,7 +152,7 @@ def admin_create_reservation(group_type, group_index, user_email, reservation_da
     }).execute()
     
     if res.count >= 2:
-        return False, "This slot is already fully booked (max 2 groups)."
+        return False, "Ce créneau est déjà complet (max 2 groupes)."
     
     data = {
         "group_type": group_type,
@@ -165,9 +165,9 @@ def admin_create_reservation(group_type, group_index, user_email, reservation_da
     try:
         supabase.table("reservations").insert(data).execute()
     except Exception as e:
-        return False, f"Database error: {e}"
+        return False, f"Erreur de base de données : {e}"
     
-    return True, "Reservation successful!"
+    return True, "Réservation (Admin) réussie !"
 
 def get_reservations_paused():
     """Check if reservations are globally paused."""

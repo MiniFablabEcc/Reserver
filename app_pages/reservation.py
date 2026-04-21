@@ -4,11 +4,11 @@ from datetime import datetime, date, timedelta
 from utils.db import create_reservation, get_reservations, delete_reservation, get_reservations_paused
 from utils.email_utils import send_reservation_confirmation
 
-st.header("📅 Make a Reservation")
+st.header("📅 Faire une Réservation")
 
 if not st.session_state.get("group_type"):
-    st.warning("Please set your identity or login first.")
-    if st.button("Go to Login"):
+    st.warning("Veuillez d'abord définir votre identité ou vous connecter.")
+    if st.button("Aller à la Connexion"):
         st.switch_page("app_pages/login.py")
     st.stop()
 
@@ -17,16 +17,16 @@ group_index = st.session_state.group_index
 user_email = st.session_state.get("user_email")
 group_label = f"{group_type} {group_index}"
 
-st.info(f"Booking for: **{group_label}**")
+st.info(f"Réservation pour : **{group_label}**")
 
 if get_reservations_paused():
-    st.error("🔴 **Reservations are currently paused by the administrator.** You cannot make new reservations at this time.")
+    st.error("🔴 **Les réservations sont actuellement suspendues par l'administrateur.** Vous ne pouvez pas effectuer de nouvelles réservations pour le moment.")
     st.stop()
 
 # Date selection
 today = date.today()
 max_date = today + timedelta(days=14) # Allow booking 2 weeks in advance
-selected_date = st.date_input("Select Date", min_value=today, max_value=max_date, value=today)
+selected_date = st.date_input("Sélectionner une Date", min_value=today, max_value=max_date, value=today)
 
 # Determine if weekend
 is_weekend = selected_date.weekday() >= 5 # 5=Saturday, 6=Sunday
@@ -49,8 +49,8 @@ else:
 # Get existing reservations for the selected date to show availability
 reservations_df = get_reservations(selected_date.strftime("%Y-%m-%d"), selected_date.strftime("%Y-%m-%d"))
 
-st.subheader("Available Slots")
-st.write("Each slot can accommodate up to 2 groups simultaneously.")
+st.subheader("Créneaux Disponibles")
+st.write("Chaque créneau peut accueillir jusqu'à 2 groupes simultanément.")
 
 for start, end in slots:
     # Count existing reservations for this slot
@@ -64,11 +64,11 @@ for start, end in slots:
     col1.write(f"**{start} - {end}**")
     
     if count >= 2:
-        col2.error("Full")
-        col3.write("Unavailable")
+        col2.error("Complet")
+        col3.write("Indisponible")
     else:
-        col2.success(f"{count}/2 Booked")
-        if col3.button("Reserve", key=f"btn_{start}_{selected_date}"):
+        col2.success(f"{count}/2 Réservé(s)")
+        if col3.button("Réserver", key=f"btn_{start}_{selected_date}"):
             success, message = create_reservation(
                 group_type,
                 group_index,
@@ -90,7 +90,7 @@ for start, end in slots:
 st.divider()
 
 # My Reservations Section
-st.subheader("My Group's Reservations")
+st.subheader("Réservations de mon Groupe")
 all_res = get_reservations()
 
 if not all_res.empty and 'group_type' in all_res.columns:
@@ -109,13 +109,13 @@ if not my_res.empty:
             c1, c2, c3 = st.columns([2, 2, 1])
             c1.write(f"{row['date']}")
             c2.write(f"{row['slot_start']} - {row['slot_end']}")
-            if c3.button("Cancel", key=f"del_{row['id']}"):
+            if c3.button("Annuler", key=f"del_{row['id']}"):
                 if delete_reservation(row['id'], group_type, group_index):
-                    st.success("Reservation cancelled.")
+                    st.success("Réservation annulée.")
                     st.rerun()
                 else:
-                    st.error("Failed to cancel.")
+                    st.error("Échec de l'annulation.")
     else:
-        st.write("No upcoming reservations.")
+        st.write("Aucune réservation à venir.")
 else:
-    st.write("You haven't made any reservations yet.")
+    st.write("Vous n'avez fait aucune réservation pour le moment.")

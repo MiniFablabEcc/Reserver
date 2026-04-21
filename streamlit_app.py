@@ -3,7 +3,7 @@ from utils.auth import check_auth_token, is_authenticated
 from utils.session import load_session_from_cookie, clear_session_cookie
 
 st.set_page_config(
-    page_title="MiniFabLab Reservation",
+    page_title="Réservation MiniFabLab",
     page_icon="🤖",
     layout="wide"
 )
@@ -27,9 +27,9 @@ if not st.session_state.get("group_type"):
 
 # Define navigation
 pages = []
-pages.append(st.Page("app_pages/login.py", title="Login / Identity", icon=":material/login:"))
-pages.append(st.Page("app_pages/reservation.py", title="Make a Reservation", icon=":material/event:"))
-pages.append(st.Page("app_pages/dashboard.py", title="Current Schedule", icon=":material/dashboard:"))
+pages.append(st.Page("app_pages/login.py", title="Connexion / Identité", icon=":material/login:"))
+pages.append(st.Page("app_pages/reservation.py", title="Faire une Réservation", icon=":material/event:"))
+pages.append(st.Page("app_pages/dashboard.py", title="Planning Actuel", icon=":material/dashboard:"))
 
 pg = st.navigation(pages)
 
@@ -38,9 +38,9 @@ with st.sidebar:
     st.title("MiniFabLab")
     if is_authenticated():
         group_label = f"{st.session_state.group_type} {st.session_state.group_index}"
-        st.success(f"Logged in as: {group_label}")
-        st.write(f"Email: {st.session_state.user_email}")
-        if st.button("Logout"):
+        st.success(f"Connecté en tant que : {group_label}")
+        st.write(f"Email : {st.session_state.user_email}")
+        if st.button("Se déconnecter"):
             clear_session_cookie()
             st.session_state.logged_in = False
             st.session_state.user_email = None
@@ -50,8 +50,8 @@ with st.sidebar:
             st.rerun()
     elif st.session_state.get("is_bachelor", False):
         group_label = f"Bachelor {st.session_state.group_index}"
-        st.info(f"Identity: {group_label}")
-        if st.button("Reset Identity"):
+        st.info(f"Identité : {group_label}")
+        if st.button("Réinitialiser l'Identité"):
             clear_session_cookie()
             st.session_state.is_bachelor = False
             st.session_state.group_type = None
@@ -59,6 +59,6 @@ with st.sidebar:
             st.session_state.user_email = None
             st.rerun()
     else:
-        st.warning("Not logged in (PLBD) or Identity not set (Bachelor)")
+        st.warning("Non connecté (PLBD) ou Identité non définie (Bachelor)")
 
 pg.run()
