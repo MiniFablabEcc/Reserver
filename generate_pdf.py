@@ -35,7 +35,7 @@ text1 = (
     "1. Allez sur la page 'Connexion / Identité'.\n"
     "2. Dans l'onglet 'Groupes PLBD', entrez votre email de l'école (format prenom.nom@centrale-casablanca.ma).\n"
     "3. Appuyez sur Entrée ou cliquez sur 'Envoyer le lien de connexion'.\n"
-    "4. Allez dans votre boîte Microsoft Outlook, vous allez y recevoir un lien de connexion magique (n'oubliez pas de vérifier vos courriers indésirables/spams !).\n"
+    "4. Allez dans votre boîte Microsoft Outlook, vous allez y recevoir un lien de connexion magique valable pendant 1 heure (n'oubliez pas de vérifier vos courriers indésirables/spams !).\n"
     "5. Cliquez sur le lien dans l'email, et vous serez automatiquement authentifié et redirigé vers l'application.\n\n"
     "Pour les Étudiants Bachelor :\n"
     "1. Allez sur l'onglet 'Groupes Bachelor'.\n"
