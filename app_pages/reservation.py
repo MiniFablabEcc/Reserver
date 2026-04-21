@@ -109,7 +109,11 @@ if not my_res.empty:
             c1, c2, c3 = st.columns([2, 2, 1])
             c1.write(f"{row['date']}")
             c2.write(f"{row['slot_start']} - {row['slot_end']}")
-            if c3.button("Annuler", key=f"del_{row['id']}"):
+            
+            res_dt = datetime.strptime(f"{row['date']} {row['slot_start']}", "%Y-%m-%d %H:%M")
+            cannot_cancel = datetime.now() > res_dt - timedelta(hours=1)
+            
+            if c3.button("Annuler", key=f"del_{row['id']}", disabled=cannot_cancel, help="Annulation impossible à moins d'1h" if cannot_cancel else "Annuler cette réservation"):
                 if delete_reservation(row['id'], group_type, group_index):
                     st.success("Réservation annulée.")
                     st.rerun()

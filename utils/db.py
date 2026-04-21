@@ -36,16 +36,22 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
     if res_slot_group.count >= 1:
         return False, "Votre groupe a déjà une réservation pour ce créneau. Vous ne pouvez pas réserver les deux places."
         
-    # On weekdays, a group can only reserve 1 slot per day
+    # On weekdays, a group can only have 1 active (future/ongoing) weekday reservation at a time
     if not is_weekend:
-        res_day_group = supabase.table("reservations").select("*", count="exact").match({
-            "date": reservation_date,
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        res_future_group = supabase.table("reservations").select("*").match({
             "group_type": group_type,
             "group_index": group_index
-        }).execute()
+        }).gte("date", today_str).execute()
         
-        if res_day_group.count >= 1:
-            return False, "En semaine, votre groupe ne peut réserver qu'un seul créneau par jour."
+        now = datetime.now()
+        for r in res_future_group.data:
+            r_date = datetime.strptime(r["date"], "%Y-%m-%d")
+            # If it's a weekday
+            if r_date.weekday() < 5:
+                r_end_dt = datetime.strptime(f"{r['date']} {r['slot_end']}", "%Y-%m-%d %H:%M")
+                if now < r_end_dt:
+                    return False, "En semaine, vous ne pouvez avoir qu'une seule réservation active à la fois. Attendez que votre réservation en cours/future se termine."
     
     # Check if the group has reached its limit for the week
     date_obj = datetime.strptime(reservation_date, "%Y-%m-%d")
