@@ -2,7 +2,10 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
-from utils.db import create_reservation, get_reservations, delete_reservation, get_reservations_paused
+from utils.db import (
+    create_reservation, get_reservations, delete_reservation, 
+    get_reservations_paused, save_material_request
+)
 from utils.email_utils import send_reservation_confirmation
 
 st.header("📅 Faire une Réservation")
@@ -19,6 +22,25 @@ user_email = st.session_state.get("user_email")
 group_label = f"{group_type} {group_index}"
 
 st.info(f"Réservation pour : **{group_label}**")
+
+if "pending_material_res_id" in st.session_state:
+    st.success("✅ Réservation confirmée !")
+    st.markdown("### 🛠️ Demande de Matériel (Optionnel)")
+    st.write("Si vous avez besoin de matériel spécifique (outils, consommables, etc.), veuillez le lister ci-dessous.")
+    materials = st.text_area("Ma liste de matériel :", placeholder="Ex: Multimètre, Pinces, Étain...")
+    
+    mcol1, mcol2 = st.columns(2)
+    if mcol1.button("Envoyer la demande", type="primary"):
+        if materials.strip():
+            save_material_request(st.session_state.pending_material_res_id, materials)
+            st.toast("Demande de matériel enregistrée !")
+        del st.session_state.pending_material_res_id
+        st.rerun()
+    
+    if mcol2.button("Passer cette étape"):
+        del st.session_state.pending_material_res_id
+        st.rerun()
+    st.stop()
 
 if get_reservations_paused():
     st.error("🔴 **Les réservations sont actuellement suspendues par l'administrateur.** Vous ne pouvez pas effectuer de nouvelles réservations pour le moment.")
@@ -80,7 +102,9 @@ for start, end in slots:
                 is_weekend
             )
             if success:
-                st.success(message)
+                # success is now the reservation ID
+                st.session_state.pending_material_res_id = message
+                
                 # Send confirmation email if user is PLBD (has email)
                 if user_email:
                     send_reservation_confirmation(user_email, group_label, selected_date.strftime("%Y-%m-%d"), f"{start}-{end}")

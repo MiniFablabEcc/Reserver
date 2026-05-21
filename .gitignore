@@ -4,3 +4,4 @@ __pycache__/
 minifablab.db
 .env
 fablab/
+DEVHISTORY.md

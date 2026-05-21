@@ -37,34 +37,40 @@ def process_login_request(email, base_url):
     if not group_type:
         return False, "Email not found in PLBD groups. If you are a Bachelor student, no login is required."
     
-    token = generate_login_token(email)
-    login_link = f"{base_url}?token={token}"
-    
-    if send_login_link(email, login_link):
-        return True, "Login link sent to your email. Please check your inbox (and spam folder)."
-    else:
-        return False, "Failed to send email. Please try again later."
+    try:
+        token = generate_login_token(email)
+        login_link = f"{base_url}?token={token}"
+        
+        if send_login_link(email, login_link):
+            return True, "Login link sent to your email. Please check your inbox (and spam folder)."
+        else:
+            return False, "Failed to send email. Please try again later."
+    except Exception as e:
+        return False, f"Erreur lors de la connexion : {e}"
 
 def check_auth_token():
     """Check query params for token and restore session. Saves cookie for persistence."""
     token = st.query_params.get("token")
     if token:
-        from utils.db import clean_expired_tokens
-        clean_expired_tokens() # Run housekeeping
-        
-        email = verify_token(token)
-        if email:
-            group_type, group_index = get_group_by_email(email)
-            st.session_state.logged_in = True
-            st.session_state.user_email = email
-            st.session_state.group_type = group_type
-            st.session_state.group_index = group_index
-            # Save session to cookie for persistence
-            from utils.session import save_session_cookie
-            save_session_cookie()
-            # Clear token from URL
-            st.query_params.clear()
-            return True
+        try:
+            from utils.db import clean_expired_tokens
+            clean_expired_tokens() # Run housekeeping
+            
+            email = verify_token(token)
+            if email:
+                group_type, group_index = get_group_by_email(email)
+                st.session_state.logged_in = True
+                st.session_state.user_email = email
+                st.session_state.group_type = group_type
+                st.session_state.group_index = group_index
+                # Save session to cookie for persistence
+                from utils.session import save_session_cookie
+                save_session_cookie()
+                # Clear token from URL
+                st.query_params.clear()
+                return True
+        except Exception as e:
+            st.error(f"Erreur de validation du jeton : {e}")
     return False
 
 def is_authenticated():

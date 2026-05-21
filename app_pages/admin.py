@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from utils.admin import is_admin
 from utils.db import (
     get_reservations, admin_delete_reservation, admin_create_reservation,
-    get_reservations_paused, set_reservations_paused
+    get_reservations_paused, set_reservations_paused, get_material_requests
 )
 
 st.header("🔐 Panneau d'Administration")
@@ -99,11 +99,25 @@ else:
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Télécharger (CSV)", data=csv, file_name=f"reservations.csv", mime="text/csv")
 
+    # Fetch material requests
+    material_df = get_material_requests()
+    
     for idx, row in df.iterrows():
+        # Check if there is a material request for this reservation
+        materials = ""
+        if not material_df.empty and 'reservation_id' in material_df.columns:
+            m_row = material_df[material_df['reservation_id'] == row['id']]
+            if not m_row.empty:
+                materials = m_row.iloc[0]['materials']
+
         c1, c2, c3, c4 = st.columns([2, 2, 3, 1])
         c1.write(f"**{row['date']}**")
         c2.write(f"{row['slot_start']} - {row['slot_end']}")
         c3.write(f"{row['group']} ({row.get('user_email', 'N/A')})")
+        
+        if materials:
+            st.warning(f"🛠️ **Matériel demandé :** {materials}")
+            
         if c4.button("🗑️", key=f"adel_{row['id']}"):
             if admin_delete_reservation(row['id']):
                 st.success(f"Réservation de {row['group']} le {row['date']} supprimée")
