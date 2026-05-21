@@ -88,4 +88,6 @@ Ce document retrace l'évolution technique du système de réservation MiniFabLa
 - **Diagnostic automatique (Erreur 521)** : Détection des erreurs de veille des instances gratuites de Supabase (Cloudflare 521 / DNS Resolution issues).
 - **Alerte UI Streamlit premium** : Affichage d'une boîte d'information esthétique en cas d'indisponibilité, expliquant à l'administrateur la procédure exacte pour restaurer le service depuis le Dashboard Supabase.
 - **Robustesse globale (Zéro-Crash)** : Encapsulation de toutes les requêtes (`select`, `insert`, `delete`, `upsert`) dans des blocs `try-except` avec fallbacks de sécurité (DataFrames vides ou indicateurs d'erreur), éliminant les tracebacks utilisateur.
+- **Maintien d'activité automatisé** : Déploiement d'un workflow GitHub Actions (`keep_alive.yml`) s'exécutant toutes les 72 heures pour pinguer l'API et empêcher la mise en veille automatique de Supabase.
+
 
