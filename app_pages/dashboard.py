@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
 from utils.db import get_reservations
-from datetime import date, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 st.header("📊 Planning Actuel")
 
 # Week selector
-today = date.today()
+today = datetime.now(ZoneInfo("Africa/Casablanca")).date()
 monday = today - timedelta(days=today.weekday())
-sunday = monday + timedelta(days=6)
 
 week_options = {
     "Cette semaine": monday,
@@ -38,7 +38,6 @@ while current_day <= week_end:
 # Create a table for each day
 for day in days:
     is_weekend = day.weekday() >= 5
-    slots = common_slots
     day_label = day.strftime("%A %d %b")
     weekend_tag = " 🟢" if is_weekend else ""
     
@@ -51,7 +50,7 @@ for day in days:
     
     # Build table data for this day
     table_data = []
-    for start, end in slots:
+    for start, end in common_slots:
         slot_label = f"{start} - {end}"
         if day_df.empty:
             groups = []

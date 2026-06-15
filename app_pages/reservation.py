@@ -1,12 +1,16 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from utils.db import (
     create_reservation, get_reservations, delete_reservation, 
     get_reservations_paused, save_material_request
 )
-from utils.email_utils import send_reservation_confirmation, send_reservation_notification_to_admin
+try:
+    from utils.email_utils import send_reservation_confirmation
+except ImportError:
+    send_reservation_confirmation = None
+from utils.notifications import send_reservation_notification_to_admin
 
 st.header("📅 Faire une Réservation")
 
@@ -105,10 +109,9 @@ for start, end in slots:
                 st.session_state.pending_material_res_id = message
                 
                 # Send confirmation email if user is PLBD (has email)
-                if user_email:
+                if user_email and send_reservation_confirmation:
                     send_reservation_confirmation(user_email, group_label, selected_date.strftime("%Y-%m-%d"), f"{start}-{end}")
                 
-                # Send notification to admin (always)
                 send_reservation_notification_to_admin(group_label, selected_date.strftime("%Y-%m-%d"), f"{start}-{end}", user_email, is_admin_created=False)
                 st.rerun()
             else:
@@ -118,7 +121,7 @@ st.divider()
 
 # My Reservations Section
 st.subheader("Réservations de mon Groupe")
-all_res = get_reservations()
+all_res = get_reservations(today.strftime("%Y-%m-%d"), (today + timedelta(days=30)).strftime("%Y-%m-%d"))
 
 if not all_res.empty and 'group_type' in all_res.columns:
     my_res = all_res[(all_res['group_type'] == group_type) & (all_res['group_index'] == group_index)]

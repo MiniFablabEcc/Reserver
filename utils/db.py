@@ -234,8 +234,18 @@ def admin_create_reservation(group_type, group_index, user_email, reservation_da
     try:
         supabase = get_supabase()
         
-        # Still check if slot is full (max 2), unless we are closing it
+        # Check if slot is closed (for non-ferme reservations)
         if group_type != "ferme":
+            res_closed = supabase.table("reservations").select("*", count="exact").match({
+                "date": reservation_date,
+                "slot_start": slot_start,
+                "slot_end": slot_end,
+                "group_type": "ferme"
+            }).execute()
+            if res_closed.count >= 1:
+                return False, "Ce créneau est fermé par l'administration. Réouvrez-le d'abord."
+            
+            # Check if slot is full (max 2)
             res = supabase.table("reservations").select("*", count="exact").match({
                 "date": reservation_date,
                 "slot_start": slot_start,
@@ -244,6 +254,16 @@ def admin_create_reservation(group_type, group_index, user_email, reservation_da
             
             if res.count >= 2:
                 return False, "Ce créneau est déjà complet (max 2 groupes)."
+        else:
+            # Dedup: check if already closed
+            res_dup = supabase.table("reservations").select("*", count="exact").match({
+                "date": reservation_date,
+                "slot_start": slot_start,
+                "slot_end": slot_end,
+                "group_type": "ferme"
+            }).execute()
+            if res_dup.count >= 1:
+                return False, "Ce créneau est déjà fermé."
         
         data = {
             "group_type": group_type,
@@ -260,6 +280,21 @@ def admin_create_reservation(group_type, group_index, user_email, reservation_da
         return True, "Réservation (Admin) réussie !"
     except Exception as e:
         return False, handle_db_error("admin_create_reservation", e)
+
+def reopen_slot(reservation_date, slot_start, slot_end):
+    """Admin: delete all ferme entries for a slot to reopen it."""
+    try:
+        supabase = get_supabase()
+        res = supabase.table("reservations").delete().match({
+            "date": reservation_date,
+            "slot_start": slot_start,
+            "slot_end": slot_end,
+            "group_type": "ferme"
+        }).execute()
+        return len(res.data) > 0
+    except Exception as e:
+        handle_db_error("reopen_slot", e)
+        return False
 
 def get_reservations_paused():
     """Check if reservations are globally paused."""

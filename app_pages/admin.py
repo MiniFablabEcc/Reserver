@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from utils.admin import is_admin
 from utils.db import (
     get_reservations, admin_delete_reservation, admin_create_reservation,
-    get_reservations_paused, set_reservations_paused, get_material_requests
+    get_reservations_paused, set_reservations_paused, get_material_requests,
+    reopen_slot
 )
-from utils.email_utils import send_reservation_notification_to_admin
+from utils.notifications import send_reservation_notification_to_admin
 
 st.header("🔐 Panneau d'Administration")
 
@@ -50,12 +51,8 @@ with acol2:
         admin_group_index = st.selectbox("Numéro de Groupe", [1, 2, 3, 4], key="admin_gi_b")
 
 admin_date = st.date_input("Date", value=datetime.now(ZoneInfo("Africa/Casablanca")).date(), key="admin_date")
-is_weekend = admin_date.weekday() >= 5
 
-if is_weekend:
-    admin_slots = [("13:00", "15:30"), ("15:30", "18:00"), ("18:00", "20:30"), ("20:30", "23:00")]
-else:
-    admin_slots = [("13:00", "15:30"), ("15:30", "18:00"), ("18:00", "20:30"), ("20:30", "23:00")]
+admin_slots = [("13:00", "15:30"), ("15:30", "18:00"), ("18:00", "20:30"), ("20:30", "23:00")]
 
 admin_slot = st.selectbox("Créneau", admin_slots, format_func=lambda x: f"{x[0]} - {x[1]}", key="admin_slot")
 
@@ -81,16 +78,40 @@ with bcol1:
             st.error(msg)
 
 with bcol2:
-    if st.button("❌ Fermer ce Créneau", key="admin_close_slot"):
-        success, msg = admin_create_reservation(
-            "ferme", 0, user_email,
-            admin_date.strftime("%Y-%m-%d"), admin_slot[0], admin_slot[1]
-        )
-        if success:
-            st.success("Créneau fermé avec succès.")
-            st.rerun()
-        else:
-            st.error(msg)
+    admin_reservations = get_reservations(
+        admin_date.strftime("%Y-%m-%d"),
+        admin_date.strftime("%Y-%m-%d")
+    )
+    is_slot_closed = False
+    if not admin_reservations.empty and 'group_type' in admin_reservations.columns:
+        slot_rows = admin_reservations[
+            (admin_reservations['slot_start'] == admin_slot[0]) &
+            (admin_reservations['slot_end'] == admin_slot[1])
+        ]
+        is_slot_closed = "ferme" in slot_rows['group_type'].values
+
+    if is_slot_closed:
+        if st.button("🔓 Réouvrir ce Créneau", key="admin_reopen_slot"):
+            reopened = reopen_slot(
+                admin_date.strftime("%Y-%m-%d"),
+                admin_slot[0], admin_slot[1]
+            )
+            if reopened:
+                st.success("Créneau réouvert avec succès.")
+                st.rerun()
+            else:
+                st.error("Échec de la réouverture.")
+    else:
+        if st.button("❌ Fermer ce Créneau", key="admin_close_slot"):
+            success, msg = admin_create_reservation(
+                "ferme", 0, user_email,
+                admin_date.strftime("%Y-%m-%d"), admin_slot[0], admin_slot[1]
+            )
+            if success:
+                st.success("Créneau fermé avec succès.")
+                st.rerun()
+            else:
+                st.error(msg)
 
 st.divider()
 
@@ -136,7 +157,10 @@ else:
         c1, c2, c3, c4 = st.columns([2, 2, 3, 1])
         c1.write(f"**{row['date']}**")
         c2.write(f"{row['slot_start']} - {row['slot_end']}")
-        c3.write(f"{row['group']} ({row.get('user_email', 'N/A')})")
+        if row['group_type'] == 'ferme':
+            c3.write(f"🚫 {row['group']}")
+        else:
+            c3.write(f"{row['group']} ({row.get('user_email', 'N/A')})")
         
         if materials:
             st.warning(f"🛠️ **Matériel demandé :** {materials}")
