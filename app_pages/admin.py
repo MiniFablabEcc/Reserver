@@ -7,6 +7,7 @@ from utils.db import (
     get_reservations, admin_delete_reservation, admin_create_reservation,
     get_reservations_paused, set_reservations_paused, get_material_requests
 )
+from utils.email_utils import send_reservation_notification_to_admin
 
 st.header("🔐 Panneau d'Administration")
 
@@ -52,22 +53,44 @@ admin_date = st.date_input("Date", value=datetime.now(ZoneInfo("Africa/Casablanc
 is_weekend = admin_date.weekday() >= 5
 
 if is_weekend:
-    admin_slots = [("10:30", "13:00"), ("13:00", "15:30"), ("15:30", "18:00"), ("18:00", "20:30"), ("20:30", "23:00")]
+    admin_slots = [("13:00", "15:30"), ("15:30", "18:00"), ("18:00", "20:30"), ("20:30", "23:00")]
 else:
-    admin_slots = [("18:00", "20:30"), ("20:30", "23:00")]
+    admin_slots = [("13:00", "15:30"), ("15:30", "18:00"), ("18:00", "20:30"), ("20:30", "23:00")]
 
 admin_slot = st.selectbox("Créneau", admin_slots, format_func=lambda x: f"{x[0]} - {x[1]}", key="admin_slot")
 
-if st.button("🔒 Réservation Admin", key="admin_reserve"):
-    success, msg = admin_create_reservation(
-        admin_group_type, admin_group_index, user_email,
-        admin_date.strftime("%Y-%m-%d"), admin_slot[0], admin_slot[1]
-    )
-    if success:
-        st.success(msg)
-        st.rerun()
-    else:
-        st.error(msg)
+bcol1, bcol2 = st.columns(2)
+with bcol1:
+    if st.button("🔒 Réservation Admin", key="admin_reserve"):
+        success, msg = admin_create_reservation(
+            admin_group_type, admin_group_index, user_email,
+            admin_date.strftime("%Y-%m-%d"), admin_slot[0], admin_slot[1]
+        )
+        if success:
+            st.success(msg)
+            admin_group_label = f"{admin_group_type} {admin_group_index}"
+            send_reservation_notification_to_admin(
+                admin_group_label,
+                admin_date.strftime("%Y-%m-%d"),
+                f"{admin_slot[0]}-{admin_slot[1]}",
+                user_email,
+                is_admin_created=True
+            )
+            st.rerun()
+        else:
+            st.error(msg)
+
+with bcol2:
+    if st.button("❌ Fermer ce Créneau", key="admin_close_slot"):
+        success, msg = admin_create_reservation(
+            "ferme", 0, user_email,
+            admin_date.strftime("%Y-%m-%d"), admin_slot[0], admin_slot[1]
+        )
+        if success:
+            st.success("Créneau fermé avec succès.")
+            st.rerun()
+        else:
+            st.error(msg)
 
 st.divider()
 

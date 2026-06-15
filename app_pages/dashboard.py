@@ -23,9 +23,8 @@ st.write(f"Affichage des réservations : **{week_start.strftime('%a %d %b')}** a
 df = get_reservations(week_start.strftime("%Y-%m-%d"), week_end.strftime("%Y-%m-%d"))
 
 # Define all possible slots
-weekday_slots = [("18:00", "20:30"), ("20:30", "23:00")]
-weekend_slots = [
-    ("10:30", "13:00"), ("13:00", "15:30"), ("15:30", "18:00"),
+common_slots = [
+    ("13:00", "15:30"), ("15:30", "18:00"),
     ("18:00", "20:30"), ("20:30", "23:00")
 ]
 
@@ -39,7 +38,7 @@ while current_day <= week_end:
 # Create a table for each day
 for day in days:
     is_weekend = day.weekday() >= 5
-    slots = weekend_slots if is_weekend else weekday_slots
+    slots = common_slots
     day_label = day.strftime("%A %d %b")
     weekend_tag = " 🟢" if is_weekend else ""
     
@@ -64,7 +63,12 @@ for day in days:
         group_1 = groups[0] if len(groups) >= 1 else "—"
         group_2 = groups[1] if len(groups) >= 2 else "—"
         
-        if occupancy >= 2:
+        is_closed = any(g.startswith("ferme") for g in groups)
+        if is_closed:
+            status = "❌ Fermé"
+            group_1 = "—"
+            group_2 = "—"
+        elif occupancy >= 2:
             status = "🔴 Complet"
         elif occupancy == 1:
             status = "🟡 1/2"

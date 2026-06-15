@@ -90,4 +90,12 @@ Ce document retrace l'évolution technique du système de réservation MiniFabLa
 - **Robustesse globale (Zéro-Crash)** : Encapsulation de toutes les requêtes (`select`, `insert`, `delete`, `upsert`) dans des blocs `try-except` avec fallbacks de sécurité (DataFrames vides ou indicateurs d'erreur), éliminant les tracebacks utilisateur.
 - **Maintien d'activité automatisé** : Déploiement d'un workflow GitHub Actions (`keep_alive.yml`) s'exécutant toutes les 72 heures pour pinguer l'API et empêcher la mise en veille automatique de Supabase.
 
+---
+
+## 📧 Phase 7 : Notifications de Réservation & Fiabilité SMTP (7 Juin 2026)
+- **Notification d'administration** : Envoi automatique d'un email de notification à `anwar.mounir@centrale-casablanca.ma` à chaque nouvelle réservation confirmée (pour les réservations utilisateurs et administrateur).
+- **Auto-détection de l'hôte SMTP** : Amélioration de la fonction d'envoi d'emails pour détecter dynamiquement l'hôte SMTP approprié (ex. `smtp-relay.brevo.com` pour les identifiants Brevo) sans dépendre exclusivement d'un hôte Gmail codé en dur.
+- **Accélération du Keep-Alive** : Ajustement de la fréquence du workflow GitHub Actions à 12 heures (au lieu de 72 heures) afin d'assurer une activité régulière et d'éviter les veilles automatiques de la base de données.
+
+
 

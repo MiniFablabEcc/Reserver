@@ -6,7 +6,7 @@ from utils.db import (
     create_reservation, get_reservations, delete_reservation, 
     get_reservations_paused, save_material_request
 )
-from utils.email_utils import send_reservation_confirmation
+from utils.email_utils import send_reservation_confirmation, send_reservation_notification_to_admin
 
 st.header("📅 Faire une Réservation")
 
@@ -55,24 +55,18 @@ selected_date = st.date_input("Sélectionner une Date", min_value=today, max_val
 is_weekend = selected_date.weekday() >= 5 # 5=Saturday, 6=Sunday
 
 # Define slots
-if is_weekend:
-    slots = [
-        ("10:30", "13:00"),
-        ("13:00", "15:30"),
-        ("15:30", "18:00"),
-        ("18:00", "20:30"),
-        ("20:30", "23:00")
-    ]
-else:
-    slots = [
-        ("18:00", "20:30"),
-        ("20:30", "23:00")
-    ]
+slots = [
+    ("13:00", "15:30"),
+    ("15:30", "18:00"),
+    ("18:00", "20:30"),
+    ("20:30", "23:00")
+]
 
 # Get existing reservations for the selected date to show availability
 reservations_df = get_reservations(selected_date.strftime("%Y-%m-%d"), selected_date.strftime("%Y-%m-%d"))
 
 st.subheader("Créneaux Disponibles")
+st.warning("⚠️ **Avertissement** : Les administrateurs se réservent le droit de fermer certaines périodes en raison d'indisponibilité.")
 st.write("Chaque créneau peut accueillir jusqu'à 2 groupes simultanément.")
 
 for start, end in slots:
@@ -80,13 +74,18 @@ for start, end in slots:
     if not reservations_df.empty and 'slot_start' in reservations_df.columns:
         slot_res = reservations_df[(reservations_df['slot_start'] == start) & (reservations_df['slot_end'] == end)]
         count = len(slot_res)
+        is_closed = "ferme" in slot_res['group_type'].values if 'group_type' in slot_res.columns else False
     else:
         count = 0
+        is_closed = False
     
     col1, col2, col3 = st.columns([2, 1, 1])
     col1.write(f"**{start} - {end}**")
     
-    if count >= 2:
+    if is_closed:
+        col2.error("Fermé")
+        col3.write("Indisponible")
+    elif count >= 2:
         col2.error("Complet")
         col3.write("Indisponible")
     else:
@@ -108,6 +107,9 @@ for start, end in slots:
                 # Send confirmation email if user is PLBD (has email)
                 if user_email:
                     send_reservation_confirmation(user_email, group_label, selected_date.strftime("%Y-%m-%d"), f"{start}-{end}")
+                
+                # Send notification to admin (always)
+                send_reservation_notification_to_admin(group_label, selected_date.strftime("%Y-%m-%d"), f"{start}-{end}", user_email, is_admin_created=False)
                 st.rerun()
             else:
                 st.error(message)

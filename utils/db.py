@@ -53,6 +53,17 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
     try:
         supabase = get_supabase()
         
+        # Check if closed
+        res_closed = supabase.table("reservations").select("*", count="exact").match({
+            "date": reservation_date,
+            "slot_start": slot_start,
+            "slot_end": slot_end,
+            "group_type": "ferme"
+        }).execute()
+        
+        if res_closed.count >= 1:
+            return False, "Ce créneau a été fermé par l'administration."
+
         # Check if the slot is already full (max 2 groups)
         res = supabase.table("reservations").select("*", count="exact").match({
             "date": reservation_date,
@@ -223,15 +234,16 @@ def admin_create_reservation(group_type, group_index, user_email, reservation_da
     try:
         supabase = get_supabase()
         
-        # Still check if slot is full (max 2)
-        res = supabase.table("reservations").select("*", count="exact").match({
-            "date": reservation_date,
-            "slot_start": slot_start,
-            "slot_end": slot_end
-        }).execute()
-        
-        if res.count >= 2:
-            return False, "Ce créneau est déjà complet (max 2 groupes)."
+        # Still check if slot is full (max 2), unless we are closing it
+        if group_type != "ferme":
+            res = supabase.table("reservations").select("*", count="exact").match({
+                "date": reservation_date,
+                "slot_start": slot_start,
+                "slot_end": slot_end
+            }).execute()
+            
+            if res.count >= 2:
+                return False, "Ce créneau est déjà complet (max 2 groupes)."
         
         data = {
             "group_type": group_type,

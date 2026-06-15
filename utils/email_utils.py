@@ -11,10 +11,18 @@ def send_email(to_email, subject, html_body):
         st.error("Email secrets not configured. Please add SMTP details to .streamlit/secrets.toml")
         return False
         
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
     smtp_user = st.secrets["email"]["user"]
     smtp_password = st.secrets["email"]["password"]
+    
+    # Dynamically detect SMTP server if not explicitly set in secrets
+    smtp_server = st.secrets["email"].get("host")
+    if not smtp_server:
+        if "brevo" in smtp_user or "sib" in smtp_user:
+            smtp_server = "smtp-relay.brevo.com"
+        else:
+            smtp_server = "smtp.gmail.com"
+            
+    smtp_port = int(st.secrets["email"].get("port", 587))
     sender_email = st.secrets.get("email", {}).get("sender", smtp_user)
 
     # Build multipart/alternative so Outlook sees a plain-text version too
@@ -75,3 +83,23 @@ def send_reservation_confirmation(to_email, group_name, date, slot):
   </body>
 </html>"""
     return send_email(to_email, subject, body)
+
+def send_reservation_notification_to_admin(group_label, date, slot, reserved_by_email, is_admin_created=False):
+    admin_email = "anwar.mounir@centrale-casablanca.ma"
+    subject = f"[MiniFabLab] Nouvelle réservation - {group_label}"
+    creator_type = "Administrateur" if is_admin_created else "Utilisateur"
+    body = f"""\
+<html>
+  <body>
+    <h3>Nouvelle Réservation Confirmée</h3>
+    <p>Une nouvelle réservation a été effectuée sur la plateforme MiniFabLab.</p>
+    <p><b>Groupe :</b> {group_label}</p>
+    <p><b>Date :</b> {date}</p>
+    <p><b>Créneau :</b> {slot}</p>
+    <p><b>Créé par :</b> {reserved_by_email or 'Non spécifié'} ({creator_type})</p>
+    <br>
+    <p>MiniFabLab ECC</p>
+  </body>
+</html>"""
+    return send_email(admin_email, subject, body)
+

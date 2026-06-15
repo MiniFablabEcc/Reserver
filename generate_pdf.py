@@ -55,8 +55,8 @@ text2 = (
     "- Semaine : Maximum 5 réservations, dans la limite d'une (1) par jour.\n"
     "- Week-end : Maximum 6 réservations.\n\n"
     "Créneaux Horaires :\n"
-    "- En semaine, 2 créneaux sont disponibles le soir (18:00-20:30, 20:30-23:00).\n"
-    "- En week-end, 5 créneaux sont répartis du matin au soir (10:30, 13:00, 15:30, 18:00, 20:30).\n\n"
+    "- Les créneaux sont uniformes toute la semaine, de 13:00 à 23:00 (13:00-15:30, 15:30-18:00, 18:00-20:30, 20:30-23:00).\n"
+    "- Avertissement : Les administrateurs se réservent le droit de fermer certaines périodes en raison d'indisponibilité.\n\n"
     "Chaque créneau horaire peut accueillir un maximum absolu de deux (2) groupes de travail simultanément."
 )
 pdf.chapter_body(text2)
