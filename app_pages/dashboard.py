@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from utils.db import get_reservations
+from utils.db import get_reservations, is_slot_closed
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -62,7 +62,7 @@ for day in days:
         group_1 = groups[0] if len(groups) >= 1 else "—"
         group_2 = groups[1] if len(groups) >= 2 else "—"
         
-        is_closed = any(g.startswith("ferme") for g in groups)
+        is_closed = is_slot_closed(day.strftime("%Y-%m-%d"), start, end)
         if is_closed:
             status = "❌ Fermé"
             group_1 = "—"

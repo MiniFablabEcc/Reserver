@@ -1,8 +1,53 @@
 import pandas as pd
+import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import streamlit as st
 from supabase import create_client, Client
+
+CLOSED_SLOTS_KEY = "closed_slots"
+
+def _get_closed_slots():
+    supabase = get_supabase()
+    res = supabase.table("app_settings").select("value").eq("key", CLOSED_SLOTS_KEY).execute()
+    if res.data:
+        try:
+            return json.loads(res.data[0]["value"])
+        except (json.JSONDecodeError, TypeError):
+            return []
+    return []
+
+def _save_closed_slots(closed_list):
+    supabase = get_supabase()
+    supabase.table("app_settings").upsert({
+        "key": CLOSED_SLOTS_KEY,
+        "value": json.dumps(closed_list)
+    }, on_conflict="key").execute()
+
+def is_slot_closed(date, slot_start, slot_end):
+    closed = _get_closed_slots()
+    for s in closed:
+        if s["date"] == date and s["slot_start"] == slot_start and s["slot_end"] == slot_end:
+            return True
+    return False
+
+def close_slot(reservation_date, slot_start, slot_end):
+    closed = _get_closed_slots()
+    if is_slot_closed(reservation_date, slot_start, slot_end):
+        return False
+    closed.append({"date": reservation_date, "slot_start": slot_start, "slot_end": slot_end})
+    _save_closed_slots(closed)
+    return True
+
+def reopen_slot(reservation_date, slot_start, slot_end):
+    closed = _get_closed_slots()
+    new_closed = [s for s in closed if not (
+        s["date"] == reservation_date and s["slot_start"] == slot_start and s["slot_end"] == slot_end
+    )]
+    if len(new_closed) == len(closed):
+        return False
+    _save_closed_slots(new_closed)
+    return True
 
 # Initialize Supabase client
 @st.cache_resource
@@ -53,18 +98,9 @@ def create_reservation(group_type, group_index, user_email, reservation_date, sl
     try:
         supabase = get_supabase()
         
-        # Check if closed
-        res_closed = supabase.table("reservations").select("*", count="exact").match({
-            "date": reservation_date,
-            "slot_start": slot_start,
-            "slot_end": slot_end,
-            "group_type": "ferme"
-        }).execute()
-        
-        if res_closed.count >= 1:
+        if is_slot_closed(reservation_date, slot_start, slot_end):
             return False, "Ce créneau a été fermé par l'administration."
 
-        # Check if the slot is already full (max 2 groups)
         res = supabase.table("reservations").select("*", count="exact").match({
             "date": reservation_date,
             "slot_start": slot_start,
@@ -234,36 +270,17 @@ def admin_create_reservation(group_type, group_index, user_email, reservation_da
     try:
         supabase = get_supabase()
         
-        # Check if slot is closed (for non-ferme reservations)
-        if group_type != "ferme":
-            res_closed = supabase.table("reservations").select("*", count="exact").match({
-                "date": reservation_date,
-                "slot_start": slot_start,
-                "slot_end": slot_end,
-                "group_type": "ferme"
-            }).execute()
-            if res_closed.count >= 1:
-                return False, "Ce créneau est fermé par l'administration. Réouvrez-le d'abord."
-            
-            # Check if slot is full (max 2)
-            res = supabase.table("reservations").select("*", count="exact").match({
-                "date": reservation_date,
-                "slot_start": slot_start,
-                "slot_end": slot_end
-            }).execute()
-            
-            if res.count >= 2:
-                return False, "Ce créneau est déjà complet (max 2 groupes)."
-        else:
-            # Dedup: check if already closed
-            res_dup = supabase.table("reservations").select("*", count="exact").match({
-                "date": reservation_date,
-                "slot_start": slot_start,
-                "slot_end": slot_end,
-                "group_type": "ferme"
-            }).execute()
-            if res_dup.count >= 1:
-                return False, "Ce créneau est déjà fermé."
+        if is_slot_closed(reservation_date, slot_start, slot_end):
+            return False, "Ce créneau est fermé par l'administration. Réouvrez-le d'abord."
+        
+        res = supabase.table("reservations").select("*", count="exact").match({
+            "date": reservation_date,
+            "slot_start": slot_start,
+            "slot_end": slot_end
+        }).execute()
+        
+        if res.count >= 2:
+            return False, "Ce créneau est déjà complet (max 2 groupes)."
         
         data = {
             "group_type": group_type,
@@ -280,21 +297,6 @@ def admin_create_reservation(group_type, group_index, user_email, reservation_da
         return True, "Réservation (Admin) réussie !"
     except Exception as e:
         return False, handle_db_error("admin_create_reservation", e)
-
-def reopen_slot(reservation_date, slot_start, slot_end):
-    """Admin: delete all ferme entries for a slot to reopen it."""
-    try:
-        supabase = get_supabase()
-        res = supabase.table("reservations").delete().match({
-            "date": reservation_date,
-            "slot_start": slot_start,
-            "slot_end": slot_end,
-            "group_type": "ferme"
-        }).execute()
-        return len(res.data) > 0
-    except Exception as e:
-        handle_db_error("reopen_slot", e)
-        return False
 
 def get_reservations_paused():
     """Check if reservations are globally paused."""
